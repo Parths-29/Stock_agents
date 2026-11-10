@@ -1,6 +1,11 @@
 import { NextRequest } from "next/server";
 import { getStore } from "@/lib/server/store";
-import { errorResponse, json, SESSION_COOKIE } from "@/lib/server/http";
+import {
+  errorResponse,
+  json,
+  SESSION_COOKIE,
+  requestOrigin,
+} from "@/lib/server/http";
 export const runtime = "nodejs";
 export async function GET(req: NextRequest) {
   try {
@@ -30,7 +35,7 @@ export async function GET(req: NextRequest) {
       response.cookies.set(SESSION_COOKIE, token, {
         httpOnly: true,
         sameSite: "strict",
-        secure: new URL(req.url).protocol === "https:",
+        secure: requestOrigin(req).startsWith("https:"),
         path: "/",
         maxAge: 30 * 86400,
       });

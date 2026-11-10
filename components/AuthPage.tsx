@@ -11,6 +11,8 @@ import {
   Wallet,
 } from "lucide-react";
 import PetAvatar from "./PetAvatar";
+import { money } from "@/lib/market";
+import { type Quote } from "@/lib/market-data";
 type Provider = {
   request: (input: { method: string; params?: unknown[] }) => Promise<unknown>;
 };
@@ -26,6 +28,29 @@ async function request(path: string, input?: unknown) {
   return d;
 }
 export default function AuthPage({ mode }: { mode: "login" | "signup" }) {
+  const [market, setMarket] = useState<Quote[]>([]);
+  useEffect(() => {
+    let mounted = true;
+    const refresh = () =>
+      request("/api/market")
+        .then((d) => {
+          if (mounted)
+            setMarket(
+              d.quotes.filter((q: Quote) =>
+                ["ETH", "BTC", "SOL"].includes(q.symbol),
+              ),
+            );
+        })
+        .catch(() => {
+          if (mounted) setMarket([]);
+        });
+    void refresh();
+    const timer = setInterval(refresh, 15000);
+    return () => {
+      mounted = false;
+      clearInterval(timer);
+    };
+  }, []);
   const [busy, setBusy] = useState(false),
     [step, setStep] = useState(""),
     [error, setError] = useState(""),
@@ -144,6 +169,20 @@ export default function AuthPage({ mode }: { mode: "login" | "signup" }) {
                 No transaction. No token approval.
               </p>
             </div>
+          </div>
+          <div className="auth-market-tape">
+            {["ETH", "BTC", "SOL"].map((symbol) => {
+              const q = market.find((q) => q.symbol === symbol);
+              return (
+                <span key={symbol}>
+                  <b>{symbol}</b>
+                  {q?.status === "live" && q.price ? money(q.price) : "—"}
+                  <small>
+                    {q?.status === "live" ? "COINBASE" : "AWAITING FEED"}
+                  </small>
+                </span>
+              );
+            })}
           </div>
         </section>
         <section className="auth-card">

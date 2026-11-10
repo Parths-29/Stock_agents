@@ -38,6 +38,8 @@ import {
 } from "@/lib/market-data";
 import { captureChart } from "@/lib/chart-capture";
 type Journal = { id: string; text: string; time: string };
+const assetKind = (symbol: Symbol) =>
+  sampleAssets.find((a) => a.symbol === symbol)!.kind;
 type PetMemory = {
   petId: string;
   energy: number;
@@ -138,7 +140,9 @@ export default function Terminal() {
     const q =
       marketMode === "sample" || a.kind === "EQUITY"
         ? sampleQuote(a.symbol)
-        : quotes.find((q) => q.symbol === a.symbol);
+        : quotes.find(
+            (q) => q.symbol === a.symbol && q.source === "Coinbase Exchange",
+          );
     return {
       ...a,
       price: q?.price ?? a.price,
@@ -150,7 +154,9 @@ export default function Terminal() {
     marketMode === "sample" ||
     sampleAssets.find((a) => a.symbol === symbol)!.kind === "EQUITY"
       ? sampleQuote(symbol)
-      : quotes.find((q) => q.symbol === symbol) || {
+      : quotes.find(
+          (q) => q.symbol === symbol && q.source === "Coinbase Exchange",
+        ) || {
           symbol,
           price: null,
           change: null,
@@ -159,7 +165,10 @@ export default function Terminal() {
           asOf: null,
           receivedAt: null,
         };
-  const quoteReady = quote.status === "sample" || quoteFresh(quote);
+  const quoteReady =
+    marketMode === "sample" ||
+    assetKind(symbol) === "EQUITY" ||
+    quoteFresh(quote);
   const valuationReady = portfolio.holdings.every(
     (h) =>
       sampleAssets.find((a) => a.symbol === h.symbol)!.kind === "EQUITY" ||
@@ -292,6 +301,11 @@ export default function Terminal() {
   }, [active, ready]);
   useEffect(() => {
     analysisVersion.current++;
+    setSource("rules");
+    setTelemetry(null);
+  }, [active, symbol, dollars, frame, marketMode]);
+  useEffect(() => {
+    if (telemetry || source === "gemini") return;
     const context =
       marketMode === "live" &&
       asset.kind === "CRYPTO" &&
@@ -320,9 +334,7 @@ export default function Terminal() {
           }
         : next,
     );
-    setSource("rules");
-    setTelemetry(null);
-  }, [active, symbol, dollars, quotes, chart, marketMode]);
+  }, [active, symbol, dollars, quotes, chart, marketMode, telemetry, source]);
   useEffect(() => {
     const provider = (window as Window & { ethereum?: Provider }).ethereum;
     const changed = (accounts: string[]) => {
@@ -464,8 +476,9 @@ export default function Terminal() {
             <span>{a.status === "unavailable" ? "—" : money(a.price)}</span>
             <small>{a.status.toUpperCase()}</small>
             <em className={a.change < 0 ? "negative" : "positive"}>
-              {a.change > 0 ? "+" : ""}
-              {a.change.toFixed(2)}%
+              {a.status === "unavailable"
+                ? "—"
+                : `${a.change > 0 ? "+" : ""}${a.change.toFixed(2)}%`}
             </em>
           </button>
         ))}
@@ -487,7 +500,10 @@ export default function Terminal() {
           <span className="mode">
             <i className="dot" /> PAPER MODE
           </span>
-          <div className="data-controls" aria-label="Market data mode">
+          <div
+            className="data-controls desktop-data-controls"
+            aria-label="Market data mode"
+          >
             <button
               className={marketMode === "live" ? "active" : ""}
               onClick={() => setMarketMode("live")}
@@ -504,7 +520,16 @@ export default function Terminal() {
           <a href="/#phases" className="backend-link">
             {ready ? "BACKEND CONNECTED" : "CONNECTING…"}
           </a>
-          <button className="wallet-button" onClick={connect}>
+          <button
+            className="wallet-button"
+            onClick={connect}
+            aria-label={
+              authenticated
+                ? "Sign out of wallet session"
+                : "Sign in with wallet"
+            }
+            title={authenticated ? "Sign out" : "Sign in"}
+          >
             <Wallet size={15} />
             {wallet ? `${wallet.slice(0, 6)}…${wallet.slice(-4)}` : "SIGN IN"}
             <ArrowUpRight size={14} />
@@ -528,6 +553,23 @@ export default function Terminal() {
           </div>
         </div>
         <div className={`market-status ${!quoteReady ? "degraded" : ""}`}>
+          <div
+            className="data-controls mobile-data-controls"
+            aria-label="Market data mode on mobile"
+          >
+            <button
+              className={marketMode === "live" ? "active" : ""}
+              onClick={() => setMarketMode("live")}
+            >
+              LIVE CRYPTO
+            </button>
+            <button
+              className={marketMode === "sample" ? "active" : ""}
+              onClick={() => setMarketMode("sample")}
+            >
+              SAMPLE
+            </button>
+          </div>
           <span className="dot" />
           {quote.status === "sample"
             ? "Sample mode for this asset · illustrative prices and history."
@@ -588,8 +630,9 @@ export default function Terminal() {
                   >
                     {a.symbol}
                     <span className={a.change < 0 ? "negative" : "positive"}>
-                      {a.change > 0 ? "+" : ""}
-                      {a.change}%
+                      {a.status === "unavailable"
+                        ? "—"
+                        : `${a.change > 0 ? "+" : ""}${a.change}%`}
                     </span>
                   </button>
                 ))}

@@ -212,7 +212,7 @@ export default function TerminalChart({
           <i className="dot" />
           {chart?.source === "sample"
             ? "Illustrative sample history"
-            : `${chart?.source || "Coinbase Exchange"} · ${chart?.asOf ? new Date(chart.asOf).toLocaleString() : "Awaiting provider"}`}
+            : `${chart?.source || "Coinbase Exchange"} · ${chart?.asOf ? new Date(chart.asOf).toISOString().replace("T", " ").replace(".000Z", "") : "Awaiting provider"}`}
         </span>
         <span>UTC / USD</span>
       </div>

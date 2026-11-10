@@ -302,7 +302,7 @@ export default function Landing() {
             {
               icon: Layers,
               title: "Find your context.",
-              body: "Pick an asset and explore the sample chart. Prices and data sources are labeled, so you know what you are looking at.",
+              body: "Explore live crypto history or sample equity charts. Sources and timestamps are labeled, so you know what you are looking at.",
             },
             {
               icon: ShieldCheck,
@@ -361,14 +361,14 @@ export default function Landing() {
             {
               n: "03",
               name: "Connected intelligence",
-              body: "Live crypto prices, chart vision, Gemini and Sarvam verification.",
-              status: "NEXT",
+              body: "Live crypto and wallet sign-in are here. Vision and voice adapters await provider verification.",
+              status: "IN PROGRESS",
               done: false,
             },
             {
               n: "04",
               name: "Testnet execution",
-              body: "Wallet authentication, protocol quotes, simulation and signed testnet swaps.",
+              body: "Protocol quotes, simulation and explicitly signed testnet swaps.",
               status: "PLANNED",
               done: false,
             },
@@ -394,9 +394,9 @@ export default function Landing() {
         <div className="build-note">
           <Sparkles size={16} />
           <p>
-            AI text and voice adapters are available with your API keys. Market
-            prices are currently samples. Paper fills use virtual funds;
-            strategy drafts do not execute.
+            AI vision and voice adapters are available with your API keys.
+            Crypto data comes from Coinbase; equities remain samples. Paper
+            fills use virtual funds; strategy drafts do not execute.
           </p>
         </div>
       </section>
@@ -406,9 +406,10 @@ export default function Landing() {
           <details>
             <summary>Does this trade real money?</summary>
             <p>
-              No. The current workspace uses virtual funds and sample prices.
-              Connecting a wallet displays your address; it does not request a
-              trade signature.
+              No. All orders use virtual funds. Crypto prices come from
+              Coinbase; equity prices and sample mode are fixtures. Wallet
+              sign-in proves ownership without authorizing a transaction or
+              token approval.
             </p>
           </details>
           <details>
@@ -423,9 +424,9 @@ export default function Landing() {
             <summary>Where does my progress live?</summary>
             <p>
               Paper portfolios, journal entries and companion activity live in
-              the local server’s SQLite database. An HTTP-only guest-session
-              cookie identifies your workspace. This is not a cross-device
-              account.
+              the server’s SQLite database. An HTTP-only cookie identifies your
+              session. Sign in with the same wallet to recover its workspace
+              across browsers connected to this server.
             </p>
           </details>
         </div>
