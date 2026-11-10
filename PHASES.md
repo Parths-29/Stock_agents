@@ -1,40 +1,46 @@
 # StockPaws delivery phases
 
-This file tracks shipped behavior, not just component scaffolds.
+| Phase                       | State       | Delivered / remaining                                                                                                                                                                                                                                                                                    |
+| --------------------------- | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 01 — Experience             | Implemented | Landing, terminal, responsive layouts, interactive companion profiles, draggable pets, login/signup pages                                                                                                                                                                                                |
+| 02 — Persistent backend     | Implemented | SQLite guest sessions, transactional paper fills, idempotency, journal, pet memory, request limits and health endpoint                                                                                                                                                                                   |
+| 03 — Connected intelligence | In progress | **Delivered:** EIP-712 wallet accounts, cross-browser workspace recovery, live crypto quotes/OHLCV, explicit source/staleness labels, chart PNG capture, structured Gemini adapter, existing Sarvam TTS adapter. **Remaining:** API-key-backed AI/voice verification, voice input, MongoDB cloud adapter |
+| 04 — Testnet execution      | Planned     | Verified router/chain choice, quotes, simulation, approvals, signed testnet swaps, contract spend policy and genuine explorer receipts                                                                                                                                                                   |
+| 05 — Durable strategies     | Planned     | Persistent scheduler, cancellation, permissions, failure recovery and monitored stop/limit/TWAP execution                                                                                                                                                                                                |
 
-| Phase | State | Deliverable | Acceptance |
-| --- | --- | --- | --- |
-| 01 — Experience | Implemented | Dedicated aesthetic landing at `/`, terminal at `/terminal`, interactive pet profiles and pet-specific launch links, responsive design | Visitor can understand the product, choose a pet and enter the workspace |
-| 02 — Persistent paper backend | Implemented | HTTP-only guest session, SQLite store, portfolio reads, atomic server-side fills, request idempotency, strategy drafts, journal, pet activity, provider quotas and health endpoint | Fills cannot overspend; duplicate requests cannot double-fill; sessions cannot access each other; data survives server restart |
-| 03 — Connected intelligence | Next | Live crypto feed with timestamps/staleness, real OHLCV, structured Gemini tools/chart images, Sarvam voice input, MongoDB cloud adapter with authenticated users | Inputs have provenance; disconnects are visible; provider-backed behavior is verified with credentials |
-| 04 — Testnet execution | Planned | Wallet sign-in, selected chain/router, quote validation, transaction simulation, approval review, explicit signature flow | Real testnet swap completes and its receipt matches the reviewed quote |
-| 05 — Durable strategies | Planned | Persistent scheduler, idempotent jobs, cancellation, funds/permissions model, stop/limit/TWAP monitoring | Restart, partial fill, cancellation and provider failures are tested before strategies execute |
+## Backend endpoints
 
-## Phase 02 backend contract
+| Method     | Route                              | Behavior                                                                                                             |
+| ---------- | ---------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| GET        | `/api/health`                      | Database readiness and configuration flags, never credentials                                                        |
+| GET        | `/api/session`                     | Resume/create guest session; returns identity, portfolio, journal, pet memory                                        |
+| POST       | `/api/auth/challenge`              | Five-minute session/origin/wallet-bound EIP-712 challenge                                                            |
+| POST       | `/api/auth/verify`                 | Verify ownership, consume challenge, rotate cookie and link/recover wallet workspace                                 |
+| POST       | `/api/auth/logout`                 | Revoke current token and remove cookie                                                                               |
+| GET        | `/api/market`                      | Live crypto quotes or explicitly requested samples                                                                   |
+| GET        | `/api/market?symbol=ETH&frame=24H` | Selected quote and OHLCV; supports 1H, 24H, 7D, 30D and 90D                                                          |
+| GET        | `/api/portfolio`                   | Current session's portfolio, journal and pet state                                                                   |
+| POST       | `/api/trade`                       | Transactional paper fill or saved strategy draft; live fills require fresh server quotes and a 0.5% review tolerance |
+| GET / POST | `/api/memory`                      | Session-scoped journal and pet memory                                                                                |
+| POST       | `/api/agent`                       | Context-grounded rules or optional structured Gemini output, with optional PNG chart                                 |
+| POST       | `/api/voice`                       | Optional Sarvam synthesis                                                                                            |
 
-The Node server uses SQLite for a self-contained local installation. No cloud service or key is required. This is guest-session persistence, not wallet authentication or a cross-device account. The MongoDB Atlas requirement remains part of phase 03's cloud/account work.
+Mutations require a matching Origin, session cookie and JSON within the request limit. Most routes allow 16 KiB; image-capable analysis allows 750,000 bytes, with a 512 KiB decoded PNG limit. Provider and mutation quotas persist per session/minute. Guest replacement remains a public-hosting abuse-control concern.
 
-| Method | Route | Behavior |
-| --- | --- | --- |
-| GET | `/api/health` | Database readiness and integration configuration flags; never keys |
-| GET | `/api/session` | Creates or resumes a 30-day guest workspace; returns portfolio, journal and pet activity |
-| GET | `/api/portfolio` | Reads the current session's portfolio, journal and pet state |
-| POST | `/api/trade` | Validates a paper order; server selects price; transaction saves balance, order and journal; same request ID replays safely |
-| GET / POST | `/api/memory` | Reads memory; writes a journal note or selected pet for the current session |
-| POST | `/api/agent` | Session-scoped calculated insights or optional Gemini text; records pet activity/energy |
-| POST | `/api/voice` | Session-scoped Sarvam synthesis when configured |
+## Persistence and identity
 
-Mutations require a matching Origin header, a guest-session cookie and JSON no larger than 16 KiB. AI/voice/trade/memory quotas are persisted per session and minute. Paid-provider endpoints still require stronger account/IP abuse controls before public hosting; guest sessions can be replaced.
+Default storage is `data/stockpaws.sqlite`, ignored by Git and retained across builds/restarts. Set `STOCKPAWS_DB_PATH` for another persistent location. The adapter targets one Node server, not ephemeral serverless instances or distributed replicas.
 
-## Database and ownership
+Guest tokens expire after 30 days; wallet-authenticated tokens after seven days. Cookies are HTTP-only, SameSite=Strict and Secure on HTTPS. Server records store token hashes. The signed message grants no transfer/approval permission. Only externally owned Ethereum/Sepolia accounts are supported at present; passkeys, social login, WalletConnect and contract wallets remain future work.
 
-- Default database: `data/stockpaws.sqlite`; ignored by Git. Override with `STOCKPAWS_DB_PATH`.
-- Session tokens are cryptographically random and stored as hashes on the server; the cookie is HTTP-only, SameSite=Strict, and Secure on HTTPS.
-- All private queries derive ownership from the session, never a wallet address or caller-supplied user ID.
-- Paper market fills use server fixture prices. Non-market strategies are saved drafts and do not reserve funds.
-- Browser-local prototype data is retained in localStorage but is no longer loaded as trusted portfolio state. The backend initializes its own paper portfolio.
-- Keep the database on persistent disk. This adapter is for one Node server, not ephemeral serverless instances or distributed replicas.
+First wallet sign-in claims that guest workspace. Subsequent sign-ins resume the existing wallet account rather than merging another guest portfolio into it. Browser-local prototype balances are not trusted or imported as server balances.
 
-## Checks
+## Evidence boundaries
 
-`npm test` exercises numerical logic, session isolation, idempotent fills, rollback, drafts, note validation, quotas and on-disk persistence. `npm run test:api` tests the running server's HTTP contract. See `VERIFICATION.md` for the current run results.
+- Crypto data comes from real Coinbase HTTP responses; the feed is polled, not a WebSocket stream.
+- Equity prices/history and explicit sample mode are fixtures.
+- Every execution is a paper fill. Strategy drafts neither reserve funds nor execute.
+- Gemini vision and Sarvam synthesis need credentials for real-provider validation. Tests verify request/response contracts using controlled provider responses.
+- Request IDs are correlation metadata. There is no verified TEE, on-chain spend shield, gasless settlement or human-proof integration yet.
+
+See `VERIFICATION.md` for checks and `README.md` for screenshots and setup.

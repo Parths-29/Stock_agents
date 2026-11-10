@@ -8,15 +8,15 @@ Start with crypto and paper trading. Equities require a separate licensed market
 
 ## Current version delivered
 
-The landing page introduces the five companions and launches the terminal. The workspace demonstrates the interaction loop: select an asset, inspect illustrative history, choose a specialist, calculate position risk, review a paper order, and inspect its effect in the vault/journal. Paper execution is now server-owned and persisted in SQLite, with guest-session isolation, transactional fills, idempotency and saved pet activity. It operates without provider credentials. AI and voice remain optional server-side adapters.
+The landing page introduces the companions and leads into wallet sign-in or an explicit guest demo. The terminal now reads live crypto quotes and OHLCV from Coinbase, while equity data and sample mode remain labeled fixtures. Users can inspect context, choose a specialist, calculate position risk, review a server-priced paper order, and inspect its effect in the vault/journal. SQLite persists wallet-linked and guest workspaces, transactional fills, idempotency records and pet activity. Live data, sign-in and paper trading operate without provider credentials; Gemini vision/text and Sarvam voice remain optional adapters.
 
-No numerical safety score is presented: a score such as 92/100 implies calibration the blueprint does not supply. Dollar exposure, stop references and estimated loss are more inspectable. Pattern output describes chart extremes; it does not pretend that a synthetic price line is evidence of a real setup.
+No numerical safety score is presented: a score such as 92/100 implies calibration the blueprint does not supply. Dollar exposure, stop references and estimated loss are more inspectable. Rules-based pattern output describes measured chart extremes, without claiming that those alone confirm a technical setup.
 
 ## Next implementation sequence
 
-1. **Trustworthy market inputs:** one crypto data provider, timestamps/staleness, symbol normalization, OHLCV, retry/backoff and websocket reconnect. Test gaps and stale quotes before calling data live.
-2. **Structured pet actions:** typed tool schemas, citations to candles, explicit assumptions, chart-image input for Boba, numerical calculations outside the LLM. Evaluate answers against known scenarios.
-3. **Cloud accounts and memory:** build on the implemented SQLite guest-session memory with wallet-authenticated accounts and MongoDB models for PetState and TradeJournal. Never use wallet address alone as proof of identity. Browser-local balances are not trusted server state.
+1. **Streaming market inputs:** build on the implemented validated REST feed and timestamps with websocket reconnect, richer gap handling and licensed equity data.
+2. **Evaluate pet actions:** chart PNG input and structured Gemini output are implemented. Verify real-provider behavior with credentials, then evaluate explanations against known scenarios; keep calculations outside the LLM.
+3. **Cloud accounts and memory:** build on implemented EIP-712 wallet accounts with MongoDB storage and managed backup/recovery. Browser-local balances are not trusted server state.
 4. **Voice input:** Sarvam STT, explicit microphone permission, language selection and clear recording state. TTS is implemented; transcription and translation are not.
 5. **Testnet execution:** choose chain and swap venue, verify router addresses, fetch and simulate quotes, show token approvals/minimum received/gas, enforce slippage, then request an explicit user signature. No arbitrary transaction should be sent to make a button look functional.
 6. **Persistent strategies:** durable scheduler, idempotency, cancellation, funds/permission model, observable jobs and failure recovery. Only then promote drafts to limit/stop/TWAP orders.

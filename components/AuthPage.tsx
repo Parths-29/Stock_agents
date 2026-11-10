@@ -143,7 +143,7 @@ export default function AuthPage({ mode }: { mode: "login" | "signup" }) {
             A familiar face.
             <br />A clearer
             <br />
-            <span>next move.</span>
+            <span> next move.</span>
           </h1>
           <p>
             Meet your companions. Keep your practice portfolio and trading
